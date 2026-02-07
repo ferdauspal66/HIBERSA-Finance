@@ -172,29 +172,143 @@ function drawChart(data) {
         return;
     }
     
-    // Simple bar chart
-    const barWidth = width / data.length - 10;
-    const maxValue = Math.max(...data.map(d => Math.max(d.pemasukan, d.pengeluaran)));
+    // Padding
+    const paddingTop = 20;
+    const paddingBottom = 40;
+    const paddingLeft = 50;
+    const paddingRight = 20;
+    const chartHeight = height - paddingTop - paddingBottom;
+    const chartWidth = width - paddingLeft - paddingRight;
+    
+    // Find max value for scaling
+    const allValues = data.flatMap(d => [d.pemasukan, d.pengeluaran]);
+    const maxValue = Math.max(...allValues);
+    const minValue = 0;
+    
+    // Helper function to get Y position
+    const getY = (value) => {
+        const ratio = (value - minValue) / (maxValue - minValue);
+        return paddingTop + chartHeight - (ratio * chartHeight);
+    };
+    
+    // Helper function to get X position
+    const getX = (index) => {
+        const step = chartWidth / (data.length - 1);
+        return paddingLeft + (index * step);
+    };
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#f3f4f6';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = paddingTop + (chartHeight / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(width - paddingRight, y);
+        ctx.stroke();
+        
+        // Draw Y-axis labels
+        const value = maxValue - (maxValue / 4) * i;
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(formatShortRupiah(value), paddingLeft - 5, y + 3);
+    }
+    
+    // Draw Pemasukan line (green)
+    ctx.beginPath();
+    ctx.strokeStyle = '#16a34a';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     
     data.forEach((item, index) => {
-        const x = index * (barWidth + 10) + 5;
+        const x = getX(index);
+        const y = getY(item.pemasukan);
         
-        // Pemasukan (green)
-        const pemasukanHeight = (item.pemasukan / maxValue) * (height - 40);
-        ctx.fillStyle = '#16a34a';
-        ctx.fillRect(x, height - pemasukanHeight - 20, barWidth / 2 - 2, pemasukanHeight);
-        
-        // Pengeluaran (red)
-        const pengeluaranHeight = (item.pengeluaran / maxValue) * (height - 40);
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(x + barWidth / 2 + 2, height - pengeluaranHeight - 20, barWidth / 2 - 2, pengeluaranHeight);
-        
-        // Date label
-        ctx.fillStyle = '#000';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(item.date, x + barWidth / 2, height - 5);
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
     });
+    ctx.stroke();
+    
+    // Draw Pemasukan points
+    data.forEach((item, index) => {
+        const x = getX(index);
+        const y = getY(item.pemasukan);
+        
+        ctx.beginPath();
+        ctx.fillStyle = '#16a34a';
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // White border
+        ctx.beginPath();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+    
+    // Draw Pengeluaran line (red)
+    ctx.beginPath();
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    
+    data.forEach((item, index) => {
+        const x = getX(index);
+        const y = getY(item.pengeluaran);
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // Draw Pengeluaran points
+    data.forEach((item, index) => {
+        const x = getX(index);
+        const y = getY(item.pengeluaran);
+        
+        ctx.beginPath();
+        ctx.fillStyle = '#dc2626';
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // White border
+        ctx.beginPath();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+    
+    // Draw X-axis labels (dates)
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    
+    data.forEach((item, index) => {
+        const x = getX(index);
+        const y = height - paddingBottom + 20;
+        ctx.fillText(item.date, x, y);
+    });
+}
+
+function formatShortRupiah(amount) {
+    const num = parseInt(amount);
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(0) + 'K';
+    }
+    return num.toString();
 }
 
 // Transaksi
