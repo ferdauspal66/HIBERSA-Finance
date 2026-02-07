@@ -1,404 +1,420 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIBERSA Finance</title>
-    <meta name="theme-color" content="#2563eb" />
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-      .active-nav {
-        color: #3b82f6;
-      }
-      .page {
-        display: none;
-      }
-      .page.active {
-        display: block;
-      }
+        .active-nav {
+            color: #000000;
+            background: #f3f4f6;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        
+        /* Inline loading indicator */
+        .loading-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .loading-indicator.show {
+            display: flex;
+        }
+        .spinner-small {
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #000000;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Desktop side menu */
+        @media (min-width: 768px) {
+            body {
+                padding-bottom: 0 !important;
+            }
+            #mainApp > header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+            }
+            #sideNav {
+                display: flex !important;
+                position: fixed;
+                left: 0;
+                top: 64px;
+                bottom: 0;
+                width: 240px;
+                background: white;
+                border-right: 1px solid #e5e7eb;
+                z-index: 50;
+            }
+            #sideNav .nav-content {
+                flex-direction: column;
+                width: 100%;
+                padding: 1rem 0;
+            }
+            #sideNav button {
+                flex: none;
+                padding: 0.75rem 1.5rem;
+                text-align: left;
+                border-radius: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                transition: all 0.2s;
+                color: #6b7280;
+            }
+            #sideNav button:hover {
+                background: #f9fafb;
+                color: #000000;
+            }
+            #sideNav button.active-nav {
+                background: #f3f4f6;
+                border-left: 3px solid #000000;
+                font-weight: 600;
+                color: #000000;
+            }
+            #bottomNav {
+                display: none;
+            }
+            .page-container {
+                margin-left: 240px;
+                margin-top: 64px;
+                width: calc(100% - 240px);
+            }
+        }
+        
+        /* Mobile */
+        @media (max-width: 767px) {
+            #sideNav {
+                display: none;
+            }
+            .page-container {
+                margin-top: 0;
+            }
+        }
     </style>
-  </head>
-  <body class="bg-gray-50 pb-20">
+</head>
+<body class="bg-gray-50 pb-20">
     <!-- Login Page -->
-    <div
-      id="loginPage"
-      class="min-h-screen flex items-center justify-center p-4"
-    >
-      <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <div class="text-center mb-8">
-          <h1 class="text-3xl font-bold text-blue-600">HIBERSA Finance</h1>
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md border border-gray-200">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-black">HIBERSA Finance</h1>
+                <p class="text-gray-600 mt-2">Sistem Keuangan Sederhana</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Username</label>
+                    <input type="text" id="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="rememberMe" class="w-4 h-4 text-black rounded focus:ring-2 focus:ring-black border-gray-300">
+                    <label for="rememberMe" class="ml-2 text-sm text-gray-700">Remember Me</label>
+                </div>
+                <button type="submit" class="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition font-medium">Login</button>
+            </form>
         </div>
-        <form id="loginForm" class="space-y-4">
-          <div>
-            <label class="block text-gray-700 mb-2">Username</label>
-            <input
-              type="text"
-              id="username"
-              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label class="block text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              id="password"
-              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <label for="rememberMe" class="ml-2 text-sm text-gray-700"
-              >Remember Me</label
-            >
-          </div>
-          <button
-            type="submit"
-            class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            Login
-          </button>
-        </form>
-      </div>
     </div>
 
     <!-- Main App -->
-    <div id="mainApp" style="display: none">
-      <!-- Header -->
-      <header class="bg-blue-600 text-white p-4 shadow-lg">
-        <div class="flex justify-between items-center">
-          <h1 class="text-xl font-bold">HIBERSA Finance</h1>
-          <button
-            onclick="logout()"
-            class="text-sm bg-blue-700 px-3 py-1 rounded"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+    <div id="mainApp" style="display: none;">
+        <!-- Header -->
+        <header class="bg-black text-white p-4 shadow-lg">
+            <div class="flex justify-between items-center max-w-7xl mx-auto">
+                <h1 class="text-xl font-bold">HIBERSA Finance</h1>
+                <button onclick="logout()" class="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-700 transition">Logout</button>
+            </div>
+        </header>
 
-      <!-- Dashboard Page -->
-      <div id="dashboardPage" class="page active p-4">
-        <h2 class="text-2xl font-bold mb-4">Dashboard</h2>
+        <!-- Side Navigation (Desktop) -->
+        <nav id="sideNav" style="display: none;">
+            <div class="nav-content flex flex-col">
+                <button onclick="switchPage('dashboard')" class="active-nav" id="sideNavDashboard">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchPage('transaksi')" class="text-gray-600" id="sideNavTransaksi">
+                    <i data-lucide="repeat" class="w-5 h-5"></i>
+                    <span>Transaksi</span>
+                </button>
+                <button onclick="switchPage('jenis')" class="text-gray-600" id="sideNavJenis">
+                    <i data-lucide="tags" class="w-5 h-5"></i>
+                    <span>Jenis</span>
+                </button>
+                <button onclick="switchPage('akun')" class="text-gray-600" id="sideNavAkun">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span>Akun</span>
+                </button>
+            </div>
+        </nav>
 
-        <!-- Filter Bulan -->
-        <div class="mb-4">
-          <label class="block text-gray-700 mb-2">Filter Bulan</label>
-          <input
-            type="month"
-            id="filterMonth"
-            class="w-full px-4 py-2 border rounded-lg"
-            onchange="loadDashboard()"
-          />
-        </div>
+        <!-- Page Container -->
+        <div class="page-container">
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div class="bg-green-500 text-white rounded-lg p-4 shadow">
-            <p class="text-sm opacity-90">Total Pemasukan</p>
-            <p id="totalPemasukan" class="text-2xl font-bold">Rp 0</p>
-          </div>
-          <div class="bg-red-500 text-white rounded-lg p-4 shadow">
-            <p class="text-sm opacity-90">Total Pengeluaran</p>
-            <p id="totalPengeluaran" class="text-2xl font-bold">Rp 0</p>
-          </div>
-          <div class="bg-blue-500 text-white rounded-lg p-4 shadow col-span-2">
-            <p class="text-sm opacity-90">Saldo</p>
-            <p id="saldo" class="text-2xl font-bold">Rp 0</p>
-          </div>
-        </div>
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page active p-4 max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Dashboard</h2>
+                <button onclick="loadDashboard(true)" class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span class="text-sm">Refresh</span>
+                </button>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div id="dashboardLoading" class="loading-indicator mb-4">
+                <div class="spinner-small"></div>
+                <span>Memuat data...</span>
+            </div>
+            
+            <!-- Filter Bulan -->
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2 font-medium">Filter Bulan</label>
+                <input type="month" id="filterMonth" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" onchange="loadDashboard(true)">
+            </div>
 
-        <!-- Chart -->
-        <div class="bg-white rounded-lg shadow p-4">
-          <h3 class="font-bold mb-4">Grafik Transaksi</h3>
-          <canvas id="chartCanvas" width="400" height="200"></canvas>
-        </div>
-      </div>
+            <!-- Summary Cards -->
+            <div id="dashboardContent" class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Total Pemasukan</p>
+                        <p id="totalPemasukan" class="text-2xl font-bold text-green-600">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Total Pengeluaran</p>
+                        <p id="totalPengeluaran" class="text-2xl font-bold text-red-600">Rp 0</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm col-span-2">
+                        <p class="text-sm text-gray-600 mb-1">Saldo</p>
+                        <p id="saldo" class="text-2xl font-bold">Rp 0</p>
+                    </div>
+                </div>
 
-      <!-- Transaksi Page -->
-      <div id="transaksiPage" class="page p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-bold">Riwayat Transaksi</h2>
-          <button
-            onclick="showInputModal()"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <i data-lucide="plus" class="w-5 h-5"></i> Input
-          </button>
-        </div>
-
-        <!-- Filter -->
-        <div class="mb-4">
-          <select
-            id="filterTipe"
-            class="w-full px-4 py-2 border rounded-lg"
-            onchange="loadTransaksi()"
-          >
-            <option value="">Semua Transaksi</option>
-            <option value="IN">Pemasukan</option>
-            <option value="OUT">Pengeluaran</option>
-          </select>
-        </div>
-
-        <!-- Transaction List -->
-        <div id="transaksiList" class="space-y-3">
-          <!-- Transactions will be loaded here -->
-        </div>
-      </div>
-
-      <!-- Jenis Page -->
-      <div id="jenisPage" class="page p-4">
-        <h2 class="text-2xl font-bold mb-4">Kelola Jenis Transaksi</h2>
-
-        <!-- Tabs -->
-        <div class="flex border-b mb-4">
-          <button
-            onclick="switchJenisTab('IN')"
-            id="tabIN"
-            class="flex-1 py-2 px-4 border-b-2 border-blue-600 font-bold text-blue-600"
-          >
-            Pemasukan
-          </button>
-          <button
-            onclick="switchJenisTab('OUT')"
-            id="tabOUT"
-            class="flex-1 py-2 px-4 text-gray-600"
-          >
-            Pengeluaran
-          </button>
+                <!-- Chart -->
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                    <h3 class="font-bold mb-4">Grafik Transaksi</h3>
+                    <canvas id="chartCanvas" width="400" height="200"></canvas>
+                </div>
+            </div>
         </div>
 
-        <!-- Form Input Jenis -->
-        <form id="jenisForm" class="bg-white rounded-lg shadow p-4 mb-4">
-          <input type="hidden" id="jenisType" value="IN" />
-          <div class="mb-3">
-            <label class="block text-gray-700 mb-2">Nama Jenis</label>
-            <input
-              type="text"
-              id="jenisNama"
-              class="w-full px-4 py-2 border rounded-lg"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            class="w-full bg-blue-600 text-white py-2 rounded-lg"
-          >
-            Tambah Jenis
-          </button>
-        </form>
+        <!-- Transaksi Page -->
+        <div id="transaksiPage" class="page p-4 max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Riwayat Transaksi</h2>
+                <div class="flex gap-2">
+                    <button onclick="loadTransaksi(true)" class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span class="text-sm">Refresh</span>
+                    </button>
+                    <button onclick="showInputModal()" class="bg-black text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-800 transition font-medium">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Input
+                    </button>
+                </div>
+            </div>
 
-        <!-- List Jenis -->
-        <div id="jenisList" class="space-y-2">
-          <!-- Jenis items will be loaded here -->
+            <!-- Loading Indicator -->
+            <div id="transaksiLoading" class="loading-indicator mb-4">
+                <div class="spinner-small"></div>
+                <span>Memuat transaksi...</span>
+            </div>
+
+            <!-- Filter -->
+            <div class="mb-4">
+                <select id="filterTipe" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" onchange="loadTransaksi()">
+                    <option value="">Semua Transaksi</option>
+                    <option value="IN">Pemasukan</option>
+                    <option value="OUT">Pengeluaran</option>
+                </select>
+            </div>
+
+            <!-- Transaction List -->
+            <div id="transaksiList" class="space-y-3">
+                <!-- Transactions will be loaded here -->
+            </div>
         </div>
-      </div>
 
-      <!-- Akun Page -->
-      <div id="akunPage" class="page p-4">
-        <h2 class="text-2xl font-bold mb-4">Kelola Subjek</h2>
+        <!-- Jenis Page -->
+        <div id="jenisPage" class="page p-4 max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Kelola Jenis Transaksi</h2>
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200 mb-4">
+                <button onclick="switchJenisTab('IN')" id="tabIN" class="flex-1 py-2 px-4 border-b-2 border-black font-bold">
+                    Pemasukan
+                </button>
+                <button onclick="switchJenisTab('OUT')" id="tabOUT" class="flex-1 py-2 px-4 text-gray-600 border-b-2 border-transparent">
+                    Pengeluaran
+                </button>
+            </div>
 
-        <!-- Form Input Subjek -->
-        <form id="subjekForm" class="bg-white rounded-lg shadow p-4 mb-4">
-          <div class="mb-3">
-            <label class="block text-gray-700 mb-2">Nama Subjek</label>
-            <input
-              type="text"
-              id="subjekNama"
-              class="w-full px-4 py-2 border rounded-lg"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            class="w-full bg-blue-600 text-white py-2 rounded-lg"
-          >
-            Tambah Subjek
-          </button>
-        </form>
+            <!-- Form Input Jenis -->
+            <form id="jenisForm" class="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
+                <input type="hidden" id="jenisType" value="IN">
+                <div class="mb-3">
+                    <label class="block text-gray-700 mb-2 font-medium">Nama Jenis</label>
+                    <input type="text" id="jenisNama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                </div>
+                <button type="submit" class="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition font-medium">Tambah Jenis</button>
+            </form>
 
-        <!-- List Subjek -->
-        <div id="subjekList" class="space-y-2">
-          <!-- Subjek items will be loaded here -->
+            <!-- List Jenis -->
+            <div id="jenisList" class="space-y-2">
+                <!-- Jenis items will be loaded here -->
+            </div>
         </div>
-      </div>
 
-      <!-- Bottom Navigation -->
-      <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div class="flex justify-around">
-          <button
-            onclick="switchPage('dashboard')"
-            class="flex-1 py-3 text-center active-nav"
-            id="navDashboard"
-          >
-            <i data-lucide="home" class="block text-xl mx-auto w-6 h-6"></i>
-            <span class="text-xs">Dashboard</span>
-          </button>
-          <button
-            onclick="switchPage('transaksi')"
-            class="flex-1 py-3 text-center text-gray-600"
-            id="navTransaksi"
-          >
-            <i data-lucide="repeat" class="block text-xl mx-auto w-6 h-6"></i>
-            <span class="text-xs">Transaksi</span>
-          </button>
-          <button
-            onclick="switchPage('jenis')"
-            class="flex-1 py-3 text-center text-gray-600"
-            id="navJenis"
-          >
-            <i data-lucide="tags" class="block text-xl mx-auto w-6 h-6"></i>
-            <span class="text-xs">Jenis</span>
-          </button>
-          <button
-            onclick="switchPage('akun')"
-            class="flex-1 py-3 text-center text-gray-600"
-            id="navAkun"
-          >
-            <i data-lucide="user" class="block text-xl mx-auto w-6 h-6"></i>
-            <span class="text-xs">Akun</span>
-          </button>
+        <!-- Akun Page -->
+        <div id="akunPage" class="page p-4 max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Kelola Subjek</h2>
+            
+            <!-- Form Input Subjek -->
+            <form id="subjekForm" class="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
+                <div class="mb-3">
+                    <label class="block text-gray-700 mb-2 font-medium">Nama Subjek</label>
+                    <input type="text" id="subjekNama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                </div>
+                <button type="submit" class="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition font-medium">Tambah Subjek</button>
+            </form>
+
+            <!-- List Subjek -->
+            <div id="subjekList" class="space-y-2">
+                <!-- Subjek items will be loaded here -->
+            </div>
         </div>
-      </nav>
+
+        </div>
+        <!-- End Page Container -->
+
+        <!-- Bottom Navigation (Mobile Only) -->
+        <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden">
+            <div class="flex justify-around">
+                <button onclick="switchPage('dashboard')" class="flex-1 py-3 text-center active-nav" id="navDashboard">
+                    <i data-lucide="home" class="block text-xl mx-auto w-6 h-6"></i>
+                    <span class="text-xs">Dashboard</span>
+                </button>
+                <button onclick="switchPage('transaksi')" class="flex-1 py-3 text-center text-gray-600" id="navTransaksi">
+                    <i data-lucide="repeat" class="block text-xl mx-auto w-6 h-6"></i>
+                    <span class="text-xs">Transaksi</span>
+                </button>
+                <button onclick="switchPage('jenis')" class="flex-1 py-3 text-center text-gray-600" id="navJenis">
+                    <i data-lucide="tags" class="block text-xl mx-auto w-6 h-6"></i>
+                    <span class="text-xs">Jenis</span>
+                </button>
+                <button onclick="switchPage('akun')" class="flex-1 py-3 text-center text-gray-600" id="navAkun">
+                    <i data-lucide="user" class="block text-xl mx-auto w-6 h-6"></i>
+                    <span class="text-xs">Akun</span>
+                </button>
+            </div>
+        </nav>
     </div>
 
-    <!-- Modal Input Transaksi -->
-    <div
-      id="inputModal"
-      class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4"
-      style="z-index: 1000"
-    >
-      <div
-        class="bg-white rounded-lg w-full max-w-md max-h-screen overflow-y-auto"
-      >
-        <div
-          class="sticky top-0 bg-white border-b p-4 flex justify-between items-center"
-        >
-          <h3 class="text-xl font-bold">Input Transaksi</h3>
-          <button onclick="closeInputModal()" class="text-gray-600 text-2xl">
-            &times;
-          </button>
+    <!-- Modal Input/Edit Transaksi -->
+    <div id="inputModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4" style="z-index: 1000;">
+        <div class="bg-white rounded-lg w-full max-w-md max-h-screen overflow-y-auto border border-gray-200">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold" id="modalTitle">Input Transaksi</h3>
+                <button onclick="closeInputModal()" class="text-gray-600 hover:text-black text-2xl">&times;</button>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200">
+                <button onclick="switchInputTab('IN')" id="inputTabIN" class="flex-1 py-3 border-b-2 border-black font-bold">
+                    Pemasukan
+                </button>
+                <button onclick="switchInputTab('OUT')" id="inputTabOUT" class="flex-1 py-3 text-gray-600 border-b-2 border-transparent">
+                    Pengeluaran
+                </button>
+            </div>
+
+            <form id="transaksiForm" class="p-4 space-y-4">
+                <input type="hidden" id="transaksiId" value="">
+                <input type="hidden" id="transaksiType" value="IN">
+                
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Tanggal</label>
+                    <input type="date" id="transaksiTanggal" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Jenis Transaksi</label>
+                    <select id="transaksiJenis" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                        <option value="">Pilih Jenis</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Subjek</label>
+                    <select id="transaksiSubjek" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                        <option value="">Pilih Subjek</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Nominal (Rp)</label>
+                    <input type="number" id="transaksiNominal" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required min="0">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 mb-2 font-medium">Keterangan</label>
+                    <textarea id="transaksiKeterangan" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">Simpan Transaksi</button>
+            </form>
         </div>
-
-        <!-- Tabs -->
-        <div class="flex border-b">
-          <button
-            onclick="switchInputTab('IN')"
-            id="inputTabIN"
-            class="flex-1 py-3 border-b-2 border-blue-600 font-bold text-blue-600"
-          >
-            Pemasukan
-          </button>
-          <button
-            onclick="switchInputTab('OUT')"
-            id="inputTabOUT"
-            class="flex-1 py-3 text-gray-600"
-          >
-            Pengeluaran
-          </button>
-        </div>
-
-        <form id="transaksiForm" class="p-4 space-y-4">
-          <input type="hidden" id="transaksiType" value="IN" />
-
-          <div>
-            <label class="block text-gray-700 mb-2">Tanggal</label>
-            <input
-              type="date"
-              id="transaksiTanggal"
-              class="w-full px-4 py-2 border rounded-lg"
-              required
-            />
-          </div>
-
-          <div>
-            <label class="block text-gray-700 mb-2">Jenis Transaksi</label>
-            <select
-              id="transaksiJenis"
-              class="w-full px-4 py-2 border rounded-lg"
-              required
-            >
-              <option value="">Pilih Jenis</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-gray-700 mb-2">Subjek</label>
-            <select
-              id="transaksiSubjek"
-              class="w-full px-4 py-2 border rounded-lg"
-              required
-            >
-              <option value="">Pilih Subjek</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-gray-700 mb-2">Nominal (Rp)</label>
-            <input
-              type="number"
-              id="transaksiNominal"
-              class="w-full px-4 py-2 border rounded-lg"
-              required
-              min="0"
-            />
-          </div>
-
-          <div>
-            <label class="block text-gray-700 mb-2">Keterangan</label>
-            <textarea
-              id="transaksiKeterangan"
-              class="w-full px-4 py-2 border rounded-lg"
-              rows="3"
-            ></textarea>
-          </div>
-
-          <button
-            type="submit"
-            class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold"
-          >
-            Simpan Transaksi
-          </button>
-        </form>
-      </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div
-      id="loadingOverlay"
-      class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center"
-      style="z-index: 2000"
-    >
-      <div class="bg-white rounded-lg p-6">
-        <div
-          class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"
-        ></div>
-        <p class="mt-4 text-gray-700">Loading...</p>
-      </div>
+    <!-- Loading Overlay (only for critical operations) -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center" style="z-index: 2000;">
+        <div class="bg-white rounded-lg p-6 border border-gray-200">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+            <p class="mt-4 text-gray-700 font-medium">Processing...</p>
+        </div>
     </div>
 
     <script src="app.js"></script>
     <script>
-      // Initialize Lucide icons
-      lucide.createIcons();
-
-      // Register Service Worker for PWA
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("sw.js")
-            .then((reg) => console.log("Service Worker registered"))
-            .catch((err) => console.log("Service Worker registration failed"));
-        });
-      }
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
     </script>
-  </body>
+</body>
 </html>
