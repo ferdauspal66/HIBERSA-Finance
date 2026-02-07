@@ -1,0 +1,666 @@
+// Configuration
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbyHyOpYqijF064OXBXUqLK6AsPqdea9yqfdKXyS2hH4GDa2z2dUViF99j6lE7eZ3uAVew/exec";
+
+let currentUser = null;
+let jenisData = { IN: [], OUT: [] };
+let subjekData = [];
+
+// Cache for SPA performance
+let cachedTransaksi = [];
+let cachedDashboard = null;
+let lastDashboardFetch = null;
+let lastTransaksiFetch = null;
+
+// Initialize
+document.addEventListener("DOMContentLoaded", function () {
+  // Set default date to today
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("transaksiTanggal").value = today;
+
+  // Set default filter month
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  document.getElementById("filterMonth").value = currentMonth;
+
+  // Check Remember Me
+  const rememberedUser = localStorage.getItem("rememberedUser");
+  if (rememberedUser) {
+    const userData = JSON.parse(rememberedUser);
+    document.getElementById("username").value = userData.username;
+    document.getElementById("password").value = userData.password;
+    document.getElementById("rememberMe").checked = true;
+  }
+
+  // Login form
+  document.getElementById("loginForm").addEventListener("submit", handleLogin);
+
+  // Transaksi form
+  document
+    .getElementById("transaksiForm")
+    .addEventListener("submit", handleTransaksiSubmit);
+
+  // Jenis form
+  document
+    .getElementById("jenisForm")
+    .addEventListener("submit", handleJenisSubmit);
+
+  // Subjek form
+  document
+    .getElementById("subjekForm")
+    .addEventListener("submit", handleSubjekSubmit);
+
+  // Check if already logged in
+  const savedUser = sessionStorage.getItem("currentUser");
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    showMainApp();
+  }
+});
+
+// Login
+async function handleLogin(e) {
+  e.preventDefault();
+  showLoading(true);
+
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const rememberMe = document.getElementById("rememberMe").checked;
+
+  try {
+    const response = await fetch(
+      `${API_URL}?action=login&username=${username}&password=${password}`,
+    );
+    const result = await response.json();
+
+    if (result.success) {
+      currentUser = { username };
+      sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem(
+          "rememberedUser",
+          JSON.stringify({ username, password }),
+        );
+      } else {
+        localStorage.removeItem("rememberedUser");
+      }
+
+      showMainApp();
+    } else {
+      alert("Login gagal! Username atau password salah.");
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    alert("Terjadi kesalahan saat login.");
+  }
+
+  showLoading(false);
+}
+
+function logout() {
+  sessionStorage.removeItem("currentUser");
+  currentUser = null;
+
+  // Clear cache
+  cachedTransaksi = [];
+  cachedDashboard = null;
+  lastDashboardFetch = null;
+  lastTransaksiFetch = null;
+
+  document.getElementById("loginPage").style.display = "flex";
+  document.getElementById("mainApp").style.display = "none";
+}
+
+function showMainApp() {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+  loadInitialData();
+}
+
+// Load initial data
+async function loadInitialData() {
+  await loadJenisData();
+  await loadSubjekData();
+  await loadDashboard();
+}
+
+// Dashboard
+async function loadDashboard() {
+  showLoading(true);
+
+  const filterMonth = document.getElementById("filterMonth").value;
+
+  try {
+    const response = await fetch(
+      `${API_URL}?action=getDashboard&month=${filterMonth}`,
+    );
+    const result = await response.json();
+
+    if (result.success) {
+      document.getElementById("totalPemasukan").textContent = formatRupiah(
+        result.data.totalPemasukan,
+      );
+      document.getElementById("totalPengeluaran").textContent = formatRupiah(
+        result.data.totalPengeluaran,
+      );
+      document.getElementById("saldo").textContent = formatRupiah(
+        result.data.saldo,
+      );
+
+      // Draw simple chart
+      drawChart(result.data.chartData);
+    }
+  } catch (error) {
+    console.error("Dashboard error:", error);
+  }
+
+  showLoading(false);
+}
+
+function drawChart(data) {
+  const canvas = document.getElementById("chartCanvas");
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height);
+
+  if (!data || data.length === 0) {
+    ctx.font = "14px sans-serif";
+    ctx.fillStyle = "#999";
+    ctx.textAlign = "center";
+    ctx.fillText("Tidak ada data", width / 2, height / 2);
+    return;
+  }
+
+  // Simple bar chart
+  const barWidth = width / data.length - 10;
+  const maxValue = Math.max(
+    ...data.map((d) => Math.max(d.pemasukan, d.pengeluaran)),
+  );
+
+  data.forEach((item, index) => {
+    const x = index * (barWidth + 10) + 5;
+
+    // Pemasukan (green)
+    const pemasukanHeight = (item.pemasukan / maxValue) * (height - 40);
+    ctx.fillStyle = "#10b981";
+    ctx.fillRect(
+      x,
+      height - pemasukanHeight - 20,
+      barWidth / 2 - 2,
+      pemasukanHeight,
+    );
+
+    // Pengeluaran (red)
+    const pengeluaranHeight = (item.pengeluaran / maxValue) * (height - 40);
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(
+      x + barWidth / 2 + 2,
+      height - pengeluaranHeight - 20,
+      barWidth / 2 - 2,
+      pengeluaranHeight,
+    );
+
+    // Date label
+    ctx.fillStyle = "#000";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(item.date, x + barWidth / 2, height - 5);
+  });
+}
+
+// Transaksi
+async function loadTransaksi() {
+  const filterTipe = document.getElementById("filterTipe").value;
+
+  // Use cache if available and recent (less than 30 seconds)
+  const now = Date.now();
+  if (
+    cachedTransaksi.length > 0 &&
+    lastTransaksiFetch &&
+    now - lastTransaksiFetch < 30000
+  ) {
+    displayTransaksi(
+      cachedTransaksi.filter((t) => !filterTipe || t.tipe === filterTipe),
+    );
+    return;
+  }
+
+  showLoading(true);
+
+  try {
+    const response = await fetch(
+      `${API_URL}?action=getTransaksi&tipe=${filterTipe}`,
+    );
+    const result = await response.json();
+
+    if (result.success) {
+      cachedTransaksi = result.data;
+      lastTransaksiFetch = now;
+      displayTransaksi(result.data);
+    }
+  } catch (error) {
+    console.error("Load transaksi error:", error);
+  }
+
+  showLoading(false);
+}
+
+function displayTransaksi(transaksiList) {
+  const container = document.getElementById("transaksiList");
+
+  if (transaksiList.length === 0) {
+    container.innerHTML =
+      '<p class="text-center text-gray-500 py-8">Belum ada transaksi</p>';
+    return;
+  }
+
+  container.innerHTML = transaksiList
+    .map(
+      (t) => `
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <span class="text-xs text-gray-500">${t.idTransaksi}</span>
+                    <p class="font-bold">${t.jenis}</p>
+                    <p class="text-sm text-gray-600">${t.subjek}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-500">${formatDate(t.tanggal)}</p>
+                    <p class="font-bold ${t.tipe === "IN" ? "text-green-600" : "text-red-600"}">
+                        ${t.tipe === "IN" ? "+" : "-"} ${formatRupiah(t.nominal)}
+                    </p>
+                </div>
+            </div>
+            ${t.keterangan ? `<p class="text-sm text-gray-600 mt-2">${t.keterangan}</p>` : ""}
+        </div>
+    `,
+    )
+    .join("");
+
+  // Re-initialize Lucide icons after DOM update
+  lucide.createIcons();
+}
+
+function showInputModal() {
+  document.getElementById("inputModal").classList.remove("hidden");
+  document.getElementById("inputModal").classList.add("flex");
+  loadJenisOptions();
+  loadSubjekOptions();
+}
+
+function closeInputModal() {
+  document.getElementById("inputModal").classList.add("hidden");
+  document.getElementById("inputModal").classList.remove("flex");
+  document.getElementById("transaksiForm").reset();
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("transaksiTanggal").value = today;
+}
+
+function switchInputTab(type) {
+  document.getElementById("transaksiType").value = type;
+
+  // Update tab styling
+  document.getElementById("inputTabIN").className =
+    type === "IN"
+      ? "flex-1 py-3 border-b-2 border-blue-600 font-bold text-blue-600"
+      : "flex-1 py-3 text-gray-600";
+  document.getElementById("inputTabOUT").className =
+    type === "OUT"
+      ? "flex-1 py-3 border-b-2 border-blue-600 font-bold text-blue-600"
+      : "flex-1 py-3 text-gray-600";
+
+  loadJenisOptions();
+}
+
+async function handleTransaksiSubmit(e) {
+  e.preventDefault();
+  showLoading(true);
+
+  const data = {
+    action: "addTransaksi",
+    tipe: document.getElementById("transaksiType").value,
+    tanggal: document.getElementById("transaksiTanggal").value,
+    jenis: document.getElementById("transaksiJenis").value,
+    subjek: document.getElementById("transaksiSubjek").value,
+    nominal: document.getElementById("transaksiNominal").value,
+    keterangan: document.getElementById("transaksiKeterangan").value,
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      alert("Transaksi berhasil disimpan!");
+      closeInputModal();
+
+      // Clear cache to force refresh
+      cachedTransaksi = [];
+      cachedDashboard = null;
+      lastTransaksiFetch = null;
+      lastDashboardFetch = null;
+
+      loadDashboard();
+      if (
+        document.getElementById("transaksiPage").classList.contains("active")
+      ) {
+        loadTransaksi();
+      }
+    } else {
+      alert("Gagal menyimpan transaksi: " + result.message);
+    }
+  } catch (error) {
+    console.error("Submit transaksi error:", error);
+    alert("Terjadi kesalahan saat menyimpan transaksi.");
+  }
+
+  showLoading(false);
+}
+
+// Jenis
+async function loadJenisData() {
+  try {
+    const response = await fetch(`${API_URL}?action=getJenis`);
+    const result = await response.json();
+
+    if (result.success) {
+      jenisData = result.data;
+      displayJenis();
+    }
+  } catch (error) {
+    console.error("Load jenis error:", error);
+  }
+}
+
+function displayJenis() {
+  const currentType = document.getElementById("jenisType").value;
+  const container = document.getElementById("jenisList");
+  const list = jenisData[currentType] || [];
+
+  if (list.length === 0) {
+    container.innerHTML =
+      '<p class="text-center text-gray-500 py-4">Belum ada jenis transaksi</p>';
+    return;
+  }
+
+  container.innerHTML = list
+    .map(
+      (jenis) => `
+        <div class="bg-white rounded-lg shadow p-3 flex justify-between items-center">
+            <span>${jenis}</span>
+            <button onclick="deleteJenis('${jenis}')" class="text-red-500 text-sm p-2">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+    `,
+    )
+    .join("");
+
+  lucide.createIcons();
+}
+
+function switchJenisTab(type) {
+  document.getElementById("jenisType").value = type;
+
+  // Update tab styling
+  document.getElementById("tabIN").className =
+    type === "IN"
+      ? "flex-1 py-2 px-4 border-b-2 border-blue-600 font-bold text-blue-600"
+      : "flex-1 py-2 px-4 text-gray-600";
+  document.getElementById("tabOUT").className =
+    type === "OUT"
+      ? "flex-1 py-2 px-4 border-b-2 border-blue-600 font-bold text-blue-600"
+      : "flex-1 py-2 px-4 text-gray-600";
+
+  displayJenis();
+}
+
+async function handleJenisSubmit(e) {
+  e.preventDefault();
+  showLoading(true);
+
+  const data = {
+    action: "addJenis",
+    tipe: document.getElementById("jenisType").value,
+    nama: document.getElementById("jenisNama").value,
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      document.getElementById("jenisNama").value = "";
+      await loadJenisData();
+    } else {
+      alert("Gagal menambah jenis: " + result.message);
+    }
+  } catch (error) {
+    console.error("Add jenis error:", error);
+    alert("Terjadi kesalahan saat menambah jenis.");
+  }
+
+  showLoading(false);
+}
+
+async function deleteJenis(nama) {
+  if (!confirm(`Hapus jenis "${nama}"?`)) return;
+
+  showLoading(true);
+
+  const data = {
+    action: "deleteJenis",
+    tipe: document.getElementById("jenisType").value,
+    nama: nama,
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      await loadJenisData();
+    } else {
+      alert("Gagal menghapus jenis: " + result.message);
+    }
+  } catch (error) {
+    console.error("Delete jenis error:", error);
+    alert("Terjadi kesalahan saat menghapus jenis.");
+  }
+
+  showLoading(false);
+}
+
+function loadJenisOptions() {
+  const select = document.getElementById("transaksiJenis");
+  const type = document.getElementById("transaksiType").value;
+  const list = jenisData[type] || [];
+
+  select.innerHTML =
+    '<option value="">Pilih Jenis</option>' +
+    list.map((jenis) => `<option value="${jenis}">${jenis}</option>`).join("");
+}
+
+// Subjek
+async function loadSubjekData() {
+  try {
+    const response = await fetch(`${API_URL}?action=getSubjek`);
+    const result = await response.json();
+
+    if (result.success) {
+      subjekData = result.data;
+      displaySubjek();
+    }
+  } catch (error) {
+    console.error("Load subjek error:", error);
+  }
+}
+
+function displaySubjek() {
+  const container = document.getElementById("subjekList");
+
+  if (subjekData.length === 0) {
+    container.innerHTML =
+      '<p class="text-center text-gray-500 py-4">Belum ada subjek</p>';
+    return;
+  }
+
+  container.innerHTML = subjekData
+    .map(
+      (subjek) => `
+        <div class="bg-white rounded-lg shadow p-3 flex justify-between items-center">
+            <span>${subjek}</span>
+            <button onclick="deleteSubjek('${subjek}')" class="text-red-500 text-sm p-2">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+    `,
+    )
+    .join("");
+
+  lucide.createIcons();
+}
+
+async function handleSubjekSubmit(e) {
+  e.preventDefault();
+  showLoading(true);
+
+  const data = {
+    action: "addSubjek",
+    nama: document.getElementById("subjekNama").value,
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      document.getElementById("subjekNama").value = "";
+      await loadSubjekData();
+    } else {
+      alert("Gagal menambah subjek: " + result.message);
+    }
+  } catch (error) {
+    console.error("Add subjek error:", error);
+    alert("Terjadi kesalahan saat menambah subjek.");
+  }
+
+  showLoading(false);
+}
+
+async function deleteSubjek(nama) {
+  if (!confirm(`Hapus subjek "${nama}"?`)) return;
+
+  showLoading(true);
+
+  const data = {
+    action: "deleteSubjek",
+    nama: nama,
+  };
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      await loadSubjekData();
+    } else {
+      alert("Gagal menghapus subjek: " + result.message);
+    }
+  } catch (error) {
+    console.error("Delete subjek error:", error);
+    alert("Terjadi kesalahan saat menghapus subjek.");
+  }
+
+  showLoading(false);
+}
+
+function loadSubjekOptions() {
+  const select = document.getElementById("transaksiSubjek");
+
+  select.innerHTML =
+    '<option value="">Pilih Subjek</option>' +
+    subjekData
+      .map((subjek) => `<option value="${subjek}">${subjek}</option>`)
+      .join("");
+}
+
+// Navigation
+function switchPage(page) {
+  // Hide all pages
+  document
+    .querySelectorAll(".page")
+    .forEach((p) => p.classList.remove("active"));
+
+  // Remove active from all nav buttons
+  document.querySelectorAll("nav button").forEach((btn) => {
+    btn.classList.remove("active-nav");
+    btn.classList.add("text-gray-600");
+  });
+
+  // Show selected page
+  document.getElementById(page + "Page").classList.add("active");
+
+  // Activate nav button
+  const navBtn = document.getElementById(
+    "nav" + page.charAt(0).toUpperCase() + page.slice(1),
+  );
+  navBtn.classList.add("active-nav");
+  navBtn.classList.remove("text-gray-600");
+
+  // Load data for page (use cached data for fast SPA experience)
+  if (page === "transaksi") {
+    loadTransaksi();
+  } else if (page === "jenis") {
+    displayJenis();
+  } else if (page === "akun") {
+    displaySubjek();
+  }
+
+  // Re-initialize Lucide icons
+  lucide.createIcons();
+}
+
+// Utility functions
+function formatRupiah(amount) {
+  return "Rp " + parseInt(amount).toLocaleString("id-ID");
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function showLoading(show) {
+  const overlay = document.getElementById("loadingOverlay");
+  if (show) {
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+  } else {
+    overlay.classList.add("hidden");
+    overlay.classList.remove("flex");
+  }
+}
